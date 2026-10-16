@@ -1,0 +1,454 @@
+<title>Surprise Gift Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Figtree:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+/* Layout: one full-height stage. Phases (email -> truck -> box -> open) are swapped with data-phase on .stage.
+   Items burst out of a 3D CSS cube and float around it; each opens a modal card. Single pale-blue look by choice. */
+:root {
+  --ground: #eef4fb;
+  --ground-2: #dfeaf8;
+  --ink: #2a3445;
+  --ink-soft: #6b7789;
+  --paper: #fffdf9;
+  --kraft: #ecd0a6;
+  --blue: #4a88ec;
+  --blue-deep: #2c5fb8;
+  --wax: #c8403f;
+  --moss: #6fae5a;
+  --display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --hand: "Caveat", "Segoe Script", "Bradley Hand", cursive;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 6px; }
+
+.stage {
+  position: relative;
+  height: 100%;
+  min-height: 560px;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 40% at 20% 15%, rgba(255,255,255,.9), transparent 70%),
+    radial-gradient(50% 40% at 85% 80%, var(--ground-2), transparent 70%),
+    var(--ground);
+}
+.layer { position: absolute; inset: 0; }
+.stage[data-phase="email"] .scene-truck,
+.stage[data-phase="email"] .scene-box { display: none; }
+.stage:not([data-phase="email"]) .scene-email { display: none; }
+.stage[data-phase="truck"] .cube-btn { pointer-events: none; }
+
+/* ---------- email ---------- */
+.scene-email { display: grid; place-items: center; padding: 16px; }
+.mail {
+  width: min(440px, 100%);
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 24px 24px 20px;
+  box-shadow: 0 1px 0 rgba(42,52,69,.06), 0 18px 50px rgba(60,90,140,.16);
+  display: grid;
+  gap: 16px;
+}
+.mail h1 { font: 400 26px/1.1 var(--body); margin: 0; display: flex; gap: 10px; align-items: center; letter-spacing: -.01em; }
+.chip { font-size: 11px; background: #e9edf3; color: var(--ink-soft); padding: 3px 8px; border-radius: 4px; }
+.from { display: flex; gap: 12px; align-items: center; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #9db8dd, #5b7fb5); display: grid; place-items: center; color: #fff; font-weight: 600; }
+.from b { display: block; font-weight: 600; }
+.from span { font-size: 12px; color: var(--ink-soft); }
+.mail p { margin: 0; line-height: 1.55; }
+.mail .go { color: #1a55cc; text-decoration: underline; font-size: 16px; justify-self: start; }
+.mail .go:hover { color: var(--blue-deep); }
+.mail .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.mail .btns span { border: 1px solid #cfd6e0; border-radius: 999px; padding: 7px 16px; font-size: 13px; color: var(--ink-soft); }
+
+/* ---------- truck ---------- */
+.scene-truck { pointer-events: none; }
+.truck {
+  position: absolute; top: 58%; width: 150px; left: 0;
+  transform: translate(-200px, -50%);
+  animation: drive 3.4s cubic-bezier(.45,.05,.4,1) forwards;
+}
+@keyframes drive {
+  0% { transform: translate(-200px, -50%); }
+  38% { transform: translate(calc(50vw - 75px), -50%); }
+  58% { transform: translate(calc(50vw - 75px), -50%); }
+  100% { transform: translate(calc(100vw + 200px), -50%); }
+}
+.truck svg { display: block; width: 100%; height: auto; overflow: visible; }
+.wheel { transform-box: fill-box; transform-origin: center; animation: spin .5s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- 3D box ---------- */
+.cube-wrap { position: absolute; left: 50%; top: 66%; width: 0; height: 0; perspective: 1000px; }
+.cube-btn { position: absolute; left: -110px; top: -110px; width: 220px; height: 220px; z-index: 5; }
+.stage[data-phase="open"] .cube-btn { pointer-events: none; }
+.cube {
+  position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; margin: -75px 0 0 -75px;
+  transform-style: preserve-3d;
+  transform: rotateX(-28deg) rotateY(-40deg) scale(0);
+  transition: transform .8s cubic-bezier(.2,1.5,.4,1);
+}
+.stage:not([data-phase="email"]):not([data-phase="truck"]) .cube { transform: rotateX(-28deg) rotateY(-40deg) scale(1); }
+.stage[data-phase="box"] .cube { animation: nudge 2.6s ease-in-out 1.2s infinite; }
+@keyframes nudge {
+  0%, 82%, 100% { transform: rotateX(-28deg) rotateY(-40deg) scale(1); }
+  88% { transform: rotateX(-28deg) rotateY(-40deg) scale(1.06) rotateZ(-3deg); }
+  94% { transform: rotateX(-28deg) rotateY(-40deg) scale(1.06) rotateZ(3deg); }
+}
+.face { position: absolute; inset: 0; }
+.f-front { transform: translateZ(75px); background: linear-gradient(160deg, #5d9bf5, #3f7de0); }
+.f-right { transform: rotateY(90deg) translateZ(75px); background: linear-gradient(160deg, #3d79d8, #2c5fb8); }
+.f-back { transform: rotateY(180deg) translateZ(75px); background: #1f4a96; }
+.f-left { transform: rotateY(-90deg) translateZ(75px); background: #25549f; }
+.f-bottom { transform: rotateX(-90deg) translateZ(75px); background: #183b79; }
+.lid {
+  position: absolute; inset: -7px;
+  background: linear-gradient(135deg, #8dbbff, #6ca6f8);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.25) inset;
+  transform: rotateX(90deg) translateZ(82px);
+  transition: transform 1s cubic-bezier(.3,1.3,.5,1);
+}
+.lid { transform-style: preserve-3d; }
+.rib { position: absolute; top: 0; bottom: 0; left: 50%; width: 30px; margin-left: -15px;
+  background: linear-gradient(90deg, #d9a53e, #f6d884 50%, #d9a53e); }
+.lid .rib.h { top: 50%; bottom: auto; left: 0; right: 0; width: auto; height: 30px; margin: -15px 0 0;
+  background: linear-gradient(180deg, #d9a53e, #f6d884 50%, #d9a53e); }
+.bow { position: absolute; left: 50%; top: 50%; width: 110px; height: 73px; margin: -73px 0 0 -55px;
+  transform-origin: 50% 100%; transform: rotateZ(-50deg) rotateX(-90deg); overflow: visible; }
+.stage[data-phase="open"] .lid { transform: translate3d(120px, 70px, 90px) rotateX(90deg) rotateZ(18deg) translateZ(82px); }
+.shadow {
+  position: absolute; left: 50%; top: calc(66% + 92px); width: 230px; height: 40px; margin-left: -115px;
+  background: radial-gradient(closest-side, rgba(40,70,120,.28), transparent);
+  transition: opacity .4s;
+}
+.stage[data-phase="email"] .shadow, .stage[data-phase="truck"] .shadow { opacity: 0; }
+.hint {
+  position: absolute; left: 0; right: 0; top: calc(66% + 120px);
+  text-align: center; font: 600 24px/1 var(--hand); color: var(--ink-soft);
+  opacity: 0; transition: opacity .5s;
+}
+.stage[data-phase="box"] .hint { opacity: 1; transition-delay: 1.4s; }
+
+/* ---------- floating items ---------- */
+.item {
+  position: absolute; left: 50%; top: 66%;
+  width: 78px; height: 78px; margin: -39px 0 0 -39px;
+  transform: scale(0) rotate(-30deg);
+  transition: left .9s cubic-bezier(.2,1.2,.35,1) var(--delay), top .9s cubic-bezier(.2,1.2,.35,1) var(--delay),
+              transform .9s cubic-bezier(.2,1.6,.4,1) var(--delay);
+  z-index: 4;
+}
+.stage[data-phase="open"] .item { left: var(--x); top: var(--y); transform: scale(var(--s, 1)) rotate(var(--r, 0deg)); }
+.item .bob { display: block; width: 100%; height: 100%; animation: bob 4.2s ease-in-out var(--d, 0s) infinite; transition: filter .2s; }
+.item:hover .bob, .item:focus-visible .bob { filter: drop-shadow(0 10px 14px rgba(40,70,120,.28)); }
+.item svg { width: 100%; height: 100%; overflow: visible; display: block; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.item .tick {
+  position: absolute; right: -2px; top: -2px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--moss); color: #fff; font-size: 12px; display: none; place-items: center;
+}
+.item.seen .tick { display: grid; }
+.item .note { position: absolute; left: 50%; bottom: calc(100% + 2px); transform: translateX(-50%); white-space: nowrap; font: 600 20px/1 var(--hand); color: var(--ink-soft); pointer-events: none; }
+.replay {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+  font-size: 13px; color: var(--ink-soft); padding: 8px 16px; border-radius: 999px;
+  border: 1px solid #c9d6e8; background: rgba(255,255,255,.7);
+  opacity: 0; pointer-events: none; transition: opacity .4s 1.6s; z-index: 6;
+}
+.stage[data-phase="open"] .replay { opacity: 1; pointer-events: auto; }
+
+/* ---------- modal ---------- */
+.veil {
+  position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
+  background: rgba(238,244,251,.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.veil.on { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: relative; width: min(460px, 100%); max-height: 100%; overflow: auto;
+  background: rgba(255,255,255,.92); border-radius: 18px; padding: 34px 26px 28px;
+  box-shadow: 0 30px 80px rgba(50,80,130,.25);
+  transform: translateY(14px) scale(.96); transition: transform .45s cubic-bezier(.2,1.3,.4,1);
+}
+.veil.on .sheet { transform: none; }
+.x { position: absolute; right: 12px; top: 12px; width: 30px; height: 30px; border-radius: 50%; color: var(--ink-soft); font-size: 18px; line-height: 1; }
+.x:hover { background: #edf1f7; }
+.sheet h2 { font: 400 24px/1.2 var(--display); text-align: center; margin: 0 0 18px; text-wrap: balance; }
+.sheet h2 em { font-style: italic; }
+.sub { text-align: center; font-size: 12px; color: var(--ink-soft); margin: -10px 0 18px; }
+
+/* envelope */
+.env-stage { display: grid; justify-items: center; gap: 12px; padding-block: 8px 4px; }
+.env { position: relative; width: 250px; height: 170px; perspective: 800px; }
+.env > * { position: absolute; }
+.env-back { inset: 0; background: #dcb88a; border-radius: 6px; }
+.env-letter { left: 14px; right: 14px; top: 10px; bottom: 10px; background: #fff7e6; border-radius: 3px; transition: transform .8s .35s ease; }
+.env-front { inset: 0; border-radius: 6px; background: linear-gradient(160deg, #f1d6ae, #e6c59a); clip-path: polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%); }
+.env-flap { left: 0; right: 0; top: 0; height: 100px; background: linear-gradient(180deg, #efd3a8, #e3c092); clip-path: polygon(0 0, 100% 0, 50% 100%); transform-origin: top; transition: transform .6s ease; backface-visibility: visible; }
+.seal { left: 50%; top: 86px; width: 30px; height: 30px; margin-left: -15px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #e86d63, var(--wax) 65%); box-shadow: 0 2px 4px rgba(0,0,0,.25); transition: opacity .3s; }
+.env.open .env-flap { transform: rotateX(180deg); z-index: 0; }
+.env.open .seal { opacity: 0; }
+.env.open .env-letter { transform: translateY(-48px); }
+.env-go { font: 600 22px/1 var(--hand); color: var(--ink-soft); }
+.env-go:hover { color: var(--ink); }
+.letter { background: #fdf0d8; border-radius: 6px; padding: 28px 24px; font: 600 26px/1.35 var(--hand); color: #4a4036; display: grid; gap: 14px; animation: fade .7s both; }
+.letter .sig { justify-self: end; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } }
+
+/* gift cards */
+.gc { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.gc-art { border-radius: 10px; overflow: hidden; background: #f3f6f2; border: 1px solid #e2e7df; }
+.gc-art svg { display: block; width: 100%; height: auto; }
+.gc-foot { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); padding: 0 4px; }
+.gc-foot b { letter-spacing: 0; font-size: 14px; color: var(--ink); font-weight: 500; }
+.cafe { display: grid; grid-template-columns: 1fr 1.1fr; border-radius: 10px; overflow: hidden; border: 1px solid #e6dfd4; }
+.cafe .l { background: #f4efe6; padding: 16px 14px; display: grid; align-content: space-between; gap: 30px; min-height: 160px; }
+.cafe .l small { letter-spacing: .16em; font-size: 9px; text-transform: uppercase; color: var(--ink-soft); }
+.cafe .l strong { font: 400 22px/1.15 var(--display); }
+.cafe svg { display: block; width: 100%; height: 100%; min-height: 160px; }
+
+/* tickets */
+.tix { display: grid; gap: 12px; }
+.tick-card { display: grid; grid-template-columns: 1fr 56px; background: #f6f1e6; border: 1px solid #e3dbc8; border-radius: 6px; position: relative; }
+.tick-card::before, .tick-card::after { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 1px solid #e3dbc8; top: 50%; margin-top: -7px; }
+.tick-card::before { left: -8px; } .tick-card::after { right: -8px; }
+.tick-main { padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+.tick-main small { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.tick-main b { font: 600 15px/1.1 "Courier New", monospace; letter-spacing: .04em; }
+.barcode { height: 34px; background: repeating-linear-gradient(90deg, #2a3445 0 2px, transparent 2px 4px, #2a3445 4px 5px, transparent 5px 8px, #2a3445 8px 11px, transparent 11px 12px); }
+.tick-side { border-left: 1.5px dashed #cdbfa2; display: grid; place-items: center; font: 400 30px/1 var(--display); }
+
+/* playlist */
+.pl { display: grid; gap: 14px; justify-items: center; background: #eef1ee; border-radius: 12px; padding: 18px; }
+.cover { width: min(230px, 100%); aspect-ratio: 1; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 24px rgba(30,40,50,.25); }
+.cover svg { display: block; width: 100%; height: 100%; }
+.pl b { font: 400 18px/1 var(--display); }
+.pl small { color: var(--ink-soft); font-size: 11px; margin-top: -8px; }
+.wave { display: flex; align-items: center; gap: 3px; height: 44px; width: 100%; justify-content: center; }
+.wave i { display: block; width: 3px; border-radius: 2px; background: #5e9c6a; height: var(--h); transform-origin: center; }
+.pl.play .wave i { animation: eq .9s ease-in-out var(--dl) infinite alternate; }
+@keyframes eq { from { transform: scaleY(.35); } to { transform: scaleY(1.15); } }
+.pbtn { width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; }
+.pbtn:hover { background: var(--blue-deep); }
+
+@media (prefers-reduced-motion: reduce) {
+  .item .bob, .stage[data-phase="box"] .cube, .wheel, .pl.play .wave i { animation: none; }
+  .truck { animation-duration: .01s; }
+  * { transition-duration: .01s !important; transition-delay: 0s !important; }
+}
+</style>
+
+<main class="stage" id="stage" data-phase="email">
+
+  <!-- 1. the email -->
+  <section class="layer scene-email">
+    <article class="mail">
+      <h1 id="m-subject"></h1>
+      <div class="from"><div class="avatar" id="m-av"></div><div><b id="m-from"></b><span id="m-to"></span></div></div>
+      <p id="m-body"></p>
+      <button class="go" id="go" type="button">Click Here</button>
+      <p id="m-sign"></p>
+      <div class="btns"><span>Reply</span><span>Forward</span></div>
+    </article>
+  </section>
+
+  <!-- 2. the delivery truck -->
+  <section class="layer scene-truck" aria-hidden="true">
+    <div class="truck" id="truck">
+      <svg viewBox="0 0 150 80">
+        <ellipse cx="75" cy="76" rx="62" ry="4" fill="rgba(40,70,120,.15)"/>
+        <rect x="6" y="14" width="88" height="48" rx="5" fill="#5b92d8"/>
+        <rect x="14" y="24" width="40" height="3" rx="1.5" fill="#8db7ee"/>
+        <rect x="14" y="31" width="26" height="3" rx="1.5" fill="#8db7ee"/>
+        <path d="M94 26h22l16 18v18H94z" fill="#f1e2b0"/>
+        <path d="M101 31h12l9 11h-21z" fill="#bcd8f5"/>
+        <rect x="94" y="56" width="38" height="6" fill="#d9c58b"/>
+        <g class="wheel"><circle cx="34" cy="64" r="9" fill="#3a4658"/><circle cx="34" cy="64" r="3.5" fill="#aab4c4"/><rect x="33" y="56" width="2" height="16" fill="#aab4c4"/></g>
+        <g class="wheel"><circle cx="112" cy="64" r="9" fill="#3a4658"/><circle cx="112" cy="64" r="3.5" fill="#aab4c4"/><rect x="111" y="56" width="2" height="16" fill="#aab4c4"/></g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 3. the box and what comes out of it -->
+  <section class="layer scene-box">
+    <div class="shadow"></div>
+    <div class="cube-wrap">
+      <div class="cube">
+        <div class="face f-bottom"></div><div class="face f-back"></div><div class="face f-left"></div>
+        <div class="face f-front"><i class="rib"></i></div><div class="face f-right"><i class="rib"></i></div>
+        <div class="lid">
+          <i class="rib"></i><i class="rib h"></i>
+          <svg class="bow" viewBox="0 0 120 80" aria-hidden="true">
+            <path d="M60 64C40 66 8 60 6 36 4 12 30 6 46 26c8 10 12 24 14 38z" fill="#e2b04c"/>
+            <path d="M60 64C80 66 112 60 114 36 116 12 90 6 74 26c-8 10-12 24-14 38z" fill="#d9a43c"/>
+            <path d="M52 56C36 56 18 50 16 36 15 22 30 20 42 34c6 7 9 14 10 22z" fill="#f6d884" opacity=".7"/>
+            <path d="M68 56c16 0 34-6 36-20 1-14-14-16-26-2-6 7-9 14-10 22z" fill="#f0c968" opacity=".7"/>
+            <path d="M54 66 40 80h14zM66 66l14 14H66z" fill="#c8932f"/>
+            <rect x="48" y="50" width="24" height="22" rx="6" fill="#f2cd6e"/>
+          </svg>
+        </div>
+      </div>
+      <button class="cube-btn" id="cube" type="button" aria-label="Open the gift box"></button>
+    </div>
+    <div class="hint">tap the box</div>
+    <div id="items"></div>
+    <button class="replay" id="replay" type="button">Replay</button>
+  </section>
+
+  <!-- modal -->
+  <div class="veil" id="veil" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet" id="sheet"></div>
+  </div>
+</main>
+
+<script>
+/* ===================== EDIT THIS PART ===================== */
+const GIFT = {
+  email: {
+    subject: "Open me",
+    from: "Your Prince",
+    to: "His Princess",
+    body: "Thanks for everything these past few weeks and months po ",
+    sign: "I love you so much po",
+  },
+  items: [
+    { id: "note", type: "note", label: "A note", x: "50%", y: "24%", r: "-4deg", note: "open me first",
+      title: "A note", body: "Hello my princess, This note is for me to formally ask you out on a date possibly this sem break po if possible in MOA so that we can have tons of funs and activities po", sign: "— Your Prince" },
+    { id: "bag", type: "card", label: "Dinner ", x: "81%", y: "31%", r: "7deg",
+      title: "<em>Food and snacks</em> is on me", brand: "Foodies, snacks", amount: "₱700?", kind: "dinner" },
+    { id: "music", type: "playlist", label: "A playlist", x: "20%", y: "30%", r: "-8deg", s: 1.15,
+      title: "Our Love song", song: "Your Universe", artist: "Rico Blanco" },
+  ],
+};
+/* ========================================================== */
+
+const $ = (s, el = document) => el.querySelector(s);
+const stage = $("#stage"), veil = $("#veil"), sheet = $("#sheet");
+let timers = [];
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+
+/* email */
+$("#m-subject").innerHTML = GIFT.email.subject + ' <span class="chip">Inbox ×</span>';
+$("#m-av").textContent = GIFT.email.from[0];
+$("#m-from").textContent = GIFT.email.from;
+$("#m-to").textContent = "to " + GIFT.email.to;
+$("#m-body").textContent = "Hey " + ", " + GIFT.email.body;
+$("#m-sign").style.whiteSpace = "pre-line";
+$("#m-sign").textContent = GIFT.email.sign;
+
+/* item illustrations (flat shapes, no brands) */
+const ART = {
+  drink: `<svg viewBox="0 0 100 100"><path d="M60 6 52 40" stroke="#6fae5a" stroke-width="4" stroke-linecap="round"/><path d="M26 34h48l-6 56a6 6 0 0 1-6 5H38a6 6 0 0 1-6-5z" fill="#b7e08a"/><path d="M29 52h42l-3 38a6 6 0 0 1-6 5H38a6 6 0 0 1-6-5z" fill="#8cc75a"/><rect x="34" y="40" width="14" height="14" rx="3" fill="#fff" opacity=".8" transform="rotate(-12 41 47)"/><rect x="52" y="44" width="13" height="13" rx="3" fill="#fff" opacity=".7" transform="rotate(10 58 50)"/><rect x="22" y="28" width="56" height="8" rx="4" fill="#e9f6d6"/></svg>`,
+  bag: `<svg viewBox="0 0 100 100"><path d="M36 30c0-14 28-14 28 0" fill="none" stroke="#b98a52" stroke-width="4"/><path d="M22 30h56l5 62H17z" fill="#d9a666"/><path d="M22 30h56l1 12H21z" fill="#c8924f"/><path d="M58 52a14 14 0 1 0 0 28 11 11 0 1 1 0-28z" fill="#33503f"/></svg>`,
+  note: `<svg viewBox="0 0 100 100"><rect x="8" y="24" width="84" height="56" rx="4" fill="#e2bd8e"/><path d="M8 28 50 60 92 28v52H8z" fill="#efd3a8"/><path d="M8 24h84L50 56z" fill="#f4dfb9"/><circle cx="50" cy="56" r="9" fill="#c8403f"/><circle cx="47" cy="53" r="3" fill="#e9776d"/></svg>`,
+  music: `<svg viewBox="0 0 100 100"><rect x="26" y="6" width="48" height="88" rx="9" fill="#cfd9e3"/><rect x="26" y="6" width="48" height="88" rx="9" fill="none" stroke="#a9b6c4" stroke-width="2"/><rect x="33" y="14" width="34" height="26" rx="3" fill="#2e4560"/><rect x="37" y="19" width="12" height="12" rx="2" fill="#e08b52"/><rect x="52" y="20" width="12" height="3" rx="1" fill="#9fb4cc"/><rect x="52" y="26" width="9" height="3" rx="1" fill="#9fb4cc"/><circle cx="50" cy="68" r="19" fill="#eef2f6" stroke="#b5c1cd" stroke-width="2"/><circle cx="50" cy="68" r="7" fill="#cfd9e3"/><path d="M26 58c-18 2-18 24-4 28" fill="none" stroke="#fff" stroke-width="2" opacity=".9"/></svg>`,
+  ticket: `<svg viewBox="0 0 100 100"><g transform="rotate(-8 50 50)"><path d="M6 32h88v12a6 6 0 0 0 0 12v12H6V56a6 6 0 0 0 0-12z" fill="#e7bf7a"/><path d="M6 32h88v12a6 6 0 0 0 0 12v12H6V56a6 6 0 0 0 0-12z" fill="none" stroke="#b98d3f" stroke-width="1.5"/><text x="50" y="52" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-weight="700" fill="#5b3e12" letter-spacing="1.5">CINEMA</text><text x="50" y="62" text-anchor="middle" font-family="Georgia, serif" font-size="6" fill="#5b3e12" letter-spacing="1">ADMIT ONE</text></g></svg>`,
+};
+const ICON_FOR = { note: "note", card: null, playlist: "music", tickets: "ticket" };
+const itemArt = it => ART[it.type === "card" ? (it.kind === "cafe" ? "drink" : "bag") : ICON_FOR[it.type]];
+
+/* floating items */
+const itemsEl = $("#items");
+GIFT.items.forEach((it, i) => {
+  const b = document.createElement("button");
+  b.className = "item"; b.type = "button"; b.dataset.id = it.id;
+  b.setAttribute("aria-label", it.label);
+  b.style.cssText = `--x:${it.x};--y:${it.y};--r:${it.r || "0deg"};--s:${it.s || 1};--delay:${0.15 + i * 0.09}s;--d:${(i * -0.8).toFixed(1)}s`;
+  b.innerHTML = `<span class="bob">${itemArt(it)}${it.note ? `<span class="note">${it.note}</span>` : ""}<span class="tick">✓</span></span>`;
+  b.addEventListener("click", () => openItem(it, b));
+  itemsEl.appendChild(b);
+});
+
+/* modal bodies */
+const bars = () => Array.from({ length: 38 }, (_, i) => {
+  const h = 8 + Math.abs(Math.sin(i * 1.7) * 22) + (i % 5) * 2;
+  return `<i style="--h:${h.toFixed(0)}px;--dl:${(i % 9) * 0.07}s"></i>`;
+}).join("");
+
+const DINNER_ART = `<svg viewBox="0 0 320 190"><rect width="320" height="190" fill="#f4efe4"/><rect x="0" y="120" width="320" height="70" fill="#e5d9c4"/><path d="M0 150h320v40H0z" fill="#58a36a" opacity=".85"/><path d="M0 150h40v40H0zM80 150h40v40H80zM160 150h40v40h-40zM240 150h40v40h-40z" fill="#f4efe4" opacity=".9"/><ellipse cx="170" cy="120" rx="92" ry="34" fill="#2d3b36"/><ellipse cx="170" cy="114" rx="80" ry="27" fill="#d8472f"/><path d="M110 112c14-14 24 10 38-4s24 8 38-4 22 8 34-2" fill="none" stroke="#f08a4a" stroke-width="6" stroke-linecap="round"/><circle cx="150" cy="106" r="6" fill="#7bbf57"/><circle cx="196" cy="116" r="5" fill="#7bbf57"/><g transform="translate(262 60)"><path d="M0 70V20" stroke="#4d8a4f" stroke-width="3"/><circle cx="0" cy="14" r="10" fill="#f2a43c"/><circle cx="-14" cy="30" r="9" fill="#e3584a"/><circle cx="14" cy="26" r="9" fill="#f2c24c"/></g><text x="22" y="62" font-family="Figtree, system-ui, sans-serif" font-weight="600" font-size="38" fill="#26302c" letter-spacing="-1.5">__BRAND__</text></svg>`;
+const CAFE_ART = `<svg viewBox="0 0 200 180" preserveAspectRatio="xMidYMid slice"><rect width="200" height="180" fill="#8a5a3a"/><path d="M0 120c40-8 100-8 200 0v60H0z" fill="#6f452b"/><ellipse cx="62" cy="118" rx="52" ry="16" fill="#f3e9d8"/><path d="M22 112c10-30 70-30 80 0-18 12-62 12-80 0z" fill="#d89a4f"/><path d="M34 106c8-10 22-14 32-14M52 110c8-8 20-10 30-8" stroke="#b9772f" stroke-width="3" fill="none" stroke-linecap="round"/><g transform="translate(138 100)"><ellipse cx="0" cy="26" rx="38" ry="10" fill="#f3e9d8"/><path d="M-26 0h52l-5 26h-42z" fill="#fff7ea"/><ellipse cx="0" cy="0" rx="26" ry="8" fill="#c58f5e"/><path d="M-10 -2q10 -5 20 0" stroke="#fff3e0" stroke-width="2.5" fill="none"/></g></svg>`;
+const COVER_ART = `<svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5f86b8"/><stop offset=".45" stop-color="#f0a463"/><stop offset=".7" stop-color="#e8663a"/><stop offset=".72" stop-color="#1e2a33"/></linearGradient></defs><rect width="200" height="200" fill="url(#sk)"/><rect y="140" width="200" height="60" fill="#1b252d"/><g fill="#1b252d"><circle cx="100" cy="92" r="9"/><path d="M88 150c-2-30 2-48 12-48s14 18 12 48z"/><circle cx="72" cy="112" r="6"/><path d="M64 150c-1-18 1-30 8-30s9 12 8 30z"/><circle cx="130" cy="108" r="6"/><path d="M122 150c-1-20 1-32 8-32s9 12 8 32z"/></g></svg>`;
+
+function render(it) {
+  if (it.type === "note") return `
+    <div class="env-stage" id="envStage"><h2 id="sheet-title">${it.title}</h2>
+      <button class="env" id="env" type="button" aria-label="Open the envelope">
+        <span class="env-back"></span><span class="env-letter"></span><span class="env-front"></span><span class="env-flap"></span><span class="seal"></span>
+      </button>
+      <button class="env-go" id="envGo" type="button">click here</button>
+    </div>`;
+  if (it.type === "card" && it.kind === "dinner") return `
+    <h2 id="sheet-title">${it.title}</h2>
+    <div class="gc"><div class="gc-art">${DINNER_ART.replace("__BRAND__", it.brand)}</div>
+    <div class="gc-foot"><span>Gift card</span><b>${it.amount}</b></div></div>`;
+  if (it.type === "card") return `
+    <h2 id="sheet-title">${it.title}</h2>
+    <div class="cafe"><div class="l"><small>Gift card</small><strong>${it.brand}</strong><small>${it.amount} · any Food</small></div>${CAFE_ART}</div>`;
+  if (it.type === "tickets") {
+    const t = `<div class="tick-card"><div class="tick-main"><small>Harbor Cinema · Screen 4</small><b>${it.movie}</b><div class="barcode"></div><small>${it.when} · SEATS ${it.seats}</small></div><div class="tick-side">2</div></div>`;
+    return `<h2 id="sheet-title">${it.title}</h2><p class="sub">${it.sub}</p><div class="tix">${t}${t}</div>`;
+  }
+  if (it.type === "playlist") return `
+    <h2 id="sheet-title">${it.title}</h2>
+    <div class="pl" id="pl"><div class="cover">${COVER_ART}</div><b>${it.song}</b><small>${it.artist}</small>
+      <div class="wave" aria-hidden="true">${bars()}</div>
+      <button class="pbtn" id="pbtn" type="button" aria-label="Play preview"><svg width="18" height="18" viewBox="0 0 18 18"><path id="pico" d="M5 3l10 6-10 6z" fill="#fff"/></svg></button>
+    </div>`;
+}
+
+let lastFocus = null, current = null;
+function openItem(it, btn) {
+  lastFocus = btn; current = btn;
+  sheet.innerHTML = `<button class="x" id="x" type="button" aria-label="Close">×</button>` + render(it);
+  veil.classList.add("on");
+  $("#x").addEventListener("click", closeItem);
+  $("#x").focus();
+  if (it.type === "note") {
+    const env = $("#env"), go = $("#envGo");
+    const unseal = () => {
+      env.classList.add("open"); go.hidden = true;
+      later(() => {
+        $("#envStage").innerHTML = `<div class="letter"><span>${it.body}</span><span class="sig">${it.sign}</span></div>`;
+      }, 1250);
+    };
+    env.addEventListener("click", unseal, { once: true });
+    go.addEventListener("click", unseal, { once: true });
+  }
+  if (it.type === "playlist") {
+    $("#pbtn").addEventListener("click", () => {
+      const on = $("#pl").classList.toggle("play");
+      $("#pico").setAttribute("d", on ? "M4 3h3.5v12H4zM10.5 3H14v12h-3.5z" : "M5 3l10 6-10 6z");
+    });
+  }
+}
+function closeItem() {
+  veil.classList.remove("on");
+  if (current) { current.classList.add("seen"); current.focus(); }
+}
+veil.addEventListener("click", e => { if (e.target === veil) closeItem(); });
+addEventListener("keydown", e => { if (e.key === "Escape" && veil.classList.contains("on")) closeItem(); });
+
+/* phases */
+const setPhase = p => stage.dataset.phase = p;
+$("#go").addEventListener("click", () => {
+  setPhase("truck");
+  const t = $("#truck"); t.style.animation = "none"; void t.offsetWidth; t.style.animation = "";
+  later(() => setPhase("box"), 2300);
+});
+$("#cube").addEventListener("click", () => setPhase("open"));
+$("#replay").addEventListener("click", () => {
+  timers.forEach(clearTimeout); timers = [];
+  document.querySelectorAll(".item.seen").forEach(i => i.classList.remove("seen"));
+  setPhase("email");
+});
+</script>
